@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>모찌 설정</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:       #0d0d14;
+    --surface:  #16161f;
+    --border:   #2a2a3a;
+    --purple:   #a78bfa;
+    --pink:     #f472b6;
+    --green:    #34d399;
+    --amber:    #fbbf24;
+    --text:     #e8e8f0;
+    --muted:    #6b6b80;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    overflow-x: hidden;
+  }
+
+  /* 배경 오브 */
+  body::before {
+    content: '';
+    position: fixed;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(244,114,182,0.06) 0%, transparent 70%);
+    bottom: -50px; right: -50px;
+    pointer-events: none;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* 헤더 */
+  .header {
+    text-align: center;
+  }
+  .face {
+    width: 80px; height: 80px;
+    margin: 0 auto 16px;
+    position: relative;
+  }
+  .face svg { width:100%; height:100%; }
+  .face-glow {
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%);
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%,100% { opacity:0.6; transform:scale(1); }
+    50%      { opacity:1;   transform:scale(1.1); }
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* 카드 */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* 스텝 인디케이터 */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .step-dot.active   { background: var(--purple); box-shadow: 0 0 8px rgba(167,139,250,0.5); }
+  .step-dot.done     { background: var(--green); }
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .step-line.done { background: var(--green); }
+
+  /* 상태 표시 */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(167,139,250,0.06);
+    border: 1px solid rgba(167,139,250,0.15);
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--purple);
+    min-height: 44px;
+  }
+  .status-row.success { color: var(--green); background: rgba(52,211,153,0.06); border-color: rgba(52,211,153,0.15); }
+  .status-row.error   { color: var(--pink);  background: rgba(244,114,182,0.06); border-color: rgba(244,114,182,0.15); }
+  .status-row.neutral { color: var(--muted); background: transparent; border-color: var(--border); }
+
+  .dot-anim {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* 입력 */
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  select, input[type="password"], input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+  select:focus, input:focus { border-color: var(--purple); }
+  select option { background: var(--surface); }
+
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 44px; }
+  .pw-toggle {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 14px; padding: 4px;
+    transition: color 0.2s;
+  }
+  .pw-toggle:hover { color: var(--text); }
+
+  /* 버튼 */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: -0.2px;
+  }
+  .btn-primary {
+    background: var(--purple);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: #9167f5; transform: translateY(-1px); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    padding: 10px;
+  }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+  /* 성공 화면 */
+  .success-screen {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .success-icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(52,211,153,0.12);
+    border: 1px solid rgba(52,211,153,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes pop { from { transform:scale(0); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .success-title { font-size: 18px; font-weight: 500; color: var(--green); }
+  .success-ip {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 8px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  /* 크롬 경고 */
+  .chrome-warn {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .chrome-warn a { color: var(--purple); text-decoration: none; }
+
+  /* 숨김 */
+  .hidden { display: none !important; }
+
+  /* 페이드 */
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="face">
+      <div class="face-glow"></div>
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="38" fill="#16161f" stroke="#2a2a3a" stroke-width="1"/>
+        <!-- 왼쪽 눈 도넛 -->
+        <circle cx="26" cy="38" r="14" fill="#a78bfa"/>
+        <circle cx="26" cy="38" r="7"  fill="#0d0d14"/>
+        <!-- 오른쪽 눈 도넛 -->
+        <circle cx="54" cy="38" r="14" fill="#a78bfa"/>
+        <circle cx="54" cy="38" r="7"  fill="#0d0d14"/>
+      </svg>
+    </div>
+    <h1>모찌 WiFi 설정</h1>
+    <p class="subtitle">블루투스로 모찌를 인터넷에 연결해줘</p>
+  </div>
+
+  <!-- 메인 카드 -->
+  <div class="card" id="mainCard">
+
+    <!-- 스텝 -->
+    <div class="steps">
+      <div class="step-dot active" id="dot0"></div>
+      <div class="step-line" id="line0"></div>
+      <div class="step-dot" id="dot1"></div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-dot" id="dot2"></div>
+    </div>
+
+    <!-- 상태 메시지 -->
+    <div class="status-row neutral" id="statusRow">
+      <span id="statusText">모찌와 연결할 준비가 됐어</span>
+    </div>
+
+    <!-- Step 0: BLE 연결 -->
+    <div id="stepConnect">
+      <button class="btn btn-primary" id="btnConnect" onclick="connectBLE()">
+        🔵 모찌 찾기
+      </button>
+    </div>
+
+    <!-- Step 1: WiFi 선택 (hidden) -->
+    <div id="stepWifi" class="hidden fade-in">
+      <div class="input-group">
+        <label>WiFi 네트워크</label>
+        <select id="ssidSelect">
+          <option value="">WiFi 이름 직접 입력...</option>
+        </select>
+      </div>
+      <div class="input-group" style="margin-top:12px">
+        <label>WiFi 이름 (직접 입력)</label>
+        <input type="text" id="ssidInput" placeholder="네트워크 이름">
+      </div>
+      <div class="input-group" style="margin-top:12px">
+        <label>비밀번호</label>
+        <div class="pw-wrap">
+          <input type="password" id="pwInput" placeholder="WiFi 비밀번호">
+          <button class="pw-toggle" onclick="togglePw()" id="pwToggle">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px" id="btnSend" onclick="sendCredentials()">
+        연결하기
+      </button>
+    </div>
+
+    <!-- Step 2: 연결 중 (hidden) -->
+    <div id="stepConnecting" class="hidden fade-in">
+      <div class="status-row" style="justify-content:center">
+        <div class="dot-anim"></div>
+        <span>모찌가 WiFi에 연결 중이야...</span>
+      </div>
+    </div>
+
+    <!-- Step 3: 성공 (hidden) -->
+    <div id="stepSuccess" class="hidden fade-in success-screen">
+      <div class="success-icon">✓</div>
+      <div class="success-title">연결 완료!</div>
+      <div class="success-ip" id="connectedIp">IP: --</div>
+      <p style="font-size:13px;color:var(--muted);text-align:center;line-height:1.6">
+        같은 WiFi에서 브라우저로<br>모찌와 대화할 수 있어
+      </p>
+      <button class="btn btn-primary" onclick="openMochi()">
+        모찌 열기 →
+      </button>
+    </div>
+
+  </div>
+
+  <!-- 크롬 안내 -->
+  <p class="chrome-warn" id="chromeWarn">
+    Web Bluetooth는 크롬/엣지 브라우저에서만 동작해<br>
+    iOS Safari는 미지원 — <a href="https://apps.apple.com/app/bluefy/id1492822055" target="_blank">Bluefy 앱</a> 사용 권장
+  </p>
+
+</div>
+
+<script>
+// ── BLE UUIDs (captive_portal.h와 동일) ──────────────
+const SVC_UUID    = '12345678-1234-1234-1234-123456789abc';
+const SSID_UUID   = '12345678-1234-1234-1234-123456789ab1';
+const PASS_UUID   = '12345678-1234-1234-1234-123456789ab2';
+const STATUS_UUID = '12345678-1234-1234-1234-123456789ab3';
+
+let bleDevice = null;
+let ssidChar  = null;
+let passChar  = null;
+let statusChar = null;
+let connectedIp = '';
+
+// ── 상태 UI ───────────────────────────────────────────
+function setStatus(msg, type = '') {
+    const row = document.getElementById('statusRow');
+    const txt = document.getElementById('statusText');
+    row.className = 'status-row ' + type;
+    txt.textContent = msg;
+    if (type === '' || type === 'neutral') {
+        row.innerHTML = `<span>${msg}</span>`;
+    } else {
+        const dot = type === 'success' ? '' : '<div class="dot-anim"></div>';
+        row.innerHTML = `${dot}<span>${msg}</span>`;
+    }
+}
+
+function setStep(n) {
+    for (let i = 0; i < 3; i++) {
+        const dot = document.getElementById('dot' + i);
+        dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+    }
+    for (let i = 0; i < 2; i++) {
+        const line = document.getElementById('line' + i);
+        line.className = 'step-line' + (i < n ? ' done' : '');
+    }
+}
+
+// ── Step 1: BLE 연결 ──────────────────────────────────
+async function connectBLE() {
+    if (!navigator.bluetooth) {
+        setStatus('이 브라우저는 Bluetooth를 지원하지 않아', 'error');
+        return;
+    }
+    const btn = document.getElementById('btnConnect');
+    btn.disabled = true;
+    setStatus('모찌 찾는 중...', '');
+
+    try {
+        bleDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ name: 'Mochi' }],
+            optionalServices: [SVC_UUID]
+        });
+
+        setStatus('연결 중...', '');
+        const server = await bleDevice.gatt.connect();
+        const svc    = await server.getPrimaryService(SVC_UUID);
+
+        ssidChar   = await svc.getCharacteristic(SSID_UUID);
+        passChar   = await svc.getCharacteristic(PASS_UUID);
+        statusChar = await svc.getCharacteristic(STATUS_UUID);
+
+        // Status 알림 구독
+        await statusChar.startNotifications();
+        statusChar.addEventListener('characteristicvaluechanged', onStatusNotify);
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnect);
+
+        setStatus('모찌 연결됨 ✓', 'success');
+        setStep(1);
+        document.getElementById('stepConnect').classList.add('hidden');
+        document.getElementById('stepWifi').classList.remove('hidden');
+
+    } catch (err) {
+        setStatus('연결 실패: ' + (err.message || err), 'error');
+        btn.disabled = false;
+    }
+}
+
+// ── Step 2: WiFi 정보 전송 ────────────────────────────
+async function sendCredentials() {
+    const ssid = document.getElementById('ssidInput').value.trim()
+               || document.getElementById('ssidSelect').value;
+    const pw   = document.getElementById('pwInput').value;
+
+    if (!ssid) { setStatus('WiFi 이름을 입력해줘', 'error'); return; }
+    if (!ssidChar || !passChar) { setStatus('BLE 연결이 끊겼어', 'error'); return; }
+
+    document.getElementById('btnSend').disabled = true;
+    setStatus('전송 중...', '');
+    setStep(2);
+    document.getElementById('stepWifi').classList.add('hidden');
+    document.getElementById('stepConnecting').classList.remove('hidden');
+
+    try {
+        const enc = new TextEncoder();
+        await ssidChar.writeValue(enc.encode(ssid));
+        await new Promise(r => setTimeout(r, 300));
+        await passChar.writeValue(enc.encode(pw));
+    } catch (err) {
+        setStatus('전송 실패: ' + err.message, 'error');
+        document.getElementById('stepConnecting').classList.add('hidden');
+        document.getElementById('stepWifi').classList.remove('hidden');
+        document.getElementById('btnSend').disabled = false;
+    }
+}
+
+// ── BLE Status 알림 수신 ──────────────────────────────
+function onStatusNotify(event) {
+    const val = new TextDecoder().decode(event.target.value);
+    console.log('[BLE Status]', val);
+
+    if (val === 'connecting') {
+        setStatus('WiFi 연결 시도 중...', '');
+    } else if (val.startsWith('connected:')) {
+        connectedIp = val.split(':')[1];
+        showSuccess(connectedIp);
+    } else if (val === 'failed') {
+        setStatus('WiFi 연결 실패 — SSID/PW 확인해줘', 'error');
+        document.getElementById('stepConnecting').classList.add('hidden');
+        document.getElementById('stepWifi').classList.remove('hidden');
+        document.getElementById('btnSend').disabled = false;
+    }
+}
+
+// ── 성공 화면 ─────────────────────────────────────────
+function showSuccess(ip) {
+    setStep(2);
+    document.getElementById('stepConnecting').classList.add('hidden');
+    document.getElementById('stepSuccess').classList.remove('hidden');
+    document.getElementById('connectedIp').textContent = 'http://' + ip;
+    setStatus('WiFi 연결 완료!', 'success');
+    document.getElementById('connectedIp').dataset.ip = ip;
+}
+
+function openMochi() {
+    const ip = document.getElementById('connectedIp').dataset.ip;
+    if (ip) window.open('http://' + ip, '_blank');
+}
+
+// ── 유틸 ──────────────────────────────────────────────
+function togglePw() {
+    const input = document.getElementById('pwInput');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function onDisconnect() {
+    if (!connectedIp) {
+        setStatus('BLE 연결 끊김', 'error');
+    }
+}
+
+// ssidSelect 선택 시 ssidInput에 반영
+document.getElementById('ssidSelect').addEventListener('change', function() {
+    if (this.value) document.getElementById('ssidInput').value = this.value;
+});
+</script>
+</body>
+</html>
