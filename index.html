@@ -218,6 +218,28 @@
   }
   .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
 
+  /* 트랙 선택 버튼 */
+  .btn-track {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-track:hover { border-color: var(--purple); background: rgba(167,139,250,0.05); }
+  .btn-track.selected { border-color: var(--purple); background: rgba(167,139,250,0.08); }
+  .track-icon { font-size: 20px; flex-shrink: 0; }
+  .track-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .track-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
   /* 성공 화면 */
   .success-screen {
     text-align: center;
@@ -295,6 +317,8 @@
       <div class="step-dot" id="dot1"></div>
       <div class="step-line" id="line1"></div>
       <div class="step-dot" id="dot2"></div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-dot" id="dot3"></div>
     </div>
 
     <!-- 상태 메시지 -->
@@ -341,7 +365,56 @@
       </div>
     </div>
 
-    <!-- Step 3: 성공 (hidden) -->
+    <!-- Step 3: 트랙 선택 (hidden) -->
+    <div id="stepTrack" class="hidden fade-in">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+        AI를 처음 써봐? 아니면 이미 쓰고 있어?
+      </p>
+
+      <!-- 트랙 A -->
+      <button class="btn btn-track" id="btnTrackA" onclick="chooseTrack('a')">
+        <span class="track-icon">🟣</span>
+        <div class="track-text">
+          <div class="track-title">로디로 시작하기</div>
+          <div class="track-sub">AI가 처음이에요 · 월 구독</div>
+        </div>
+      </button>
+
+      <!-- 트랙 B -->
+      <button class="btn btn-track" id="btnTrackB" onclick="chooseTrack('b')" style="margin-top:10px">
+        <span class="track-icon">⚙️</span>
+        <div class="track-text">
+          <div class="track-title">내 Claude API 키 연결</div>
+          <div class="track-sub">이미 Anthropic Console 계정 있어요</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Step 3-B: API 키 입력 (hidden) -->
+    <div id="stepApiKey" class="hidden fade-in">
+      <div class="input-group">
+        <label>Anthropic API 키</label>
+        <div class="pw-wrap">
+          <input type="password" id="apikeyInput" placeholder="sk-ant-api03-...">
+          <button class="pw-toggle" onclick="toggleApiKey()">👁</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6">
+        <a href="https://console.anthropic.com/settings/keys" target="_blank"
+           style="color:var(--purple);text-decoration:none">
+          console.anthropic.com
+        </a>
+        에서 API 키를 복사해줘
+      </p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="sendApiKey()">
+        연결하기
+      </button>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="skipApiKey()">
+        나중에 할게
+      </button>
+    </div>
+
+    <!-- Step 4: 성공 (hidden) -->
     <div id="stepSuccess" class="hidden fade-in success-screen">
       <div class="success-icon">✓</div>
       <div class="success-title">연결 완료!</div>
@@ -370,19 +443,19 @@ const SVC_UUID    = '12345678-1234-1234-1234-123456789abc';
 const SSID_UUID   = '12345678-1234-1234-1234-123456789ab1';
 const PASS_UUID   = '12345678-1234-1234-1234-123456789ab2';
 const STATUS_UUID = '12345678-1234-1234-1234-123456789ab3';
+const APIKEY_UUID = '12345678-1234-1234-1234-123456789ab4';
 
-let bleDevice = null;
-let ssidChar  = null;
-let passChar  = null;
+let bleDevice  = null;
+let ssidChar   = null;
+let passChar   = null;
 let statusChar = null;
+let apikeyChar = null;
 let connectedIp = '';
 
 // ── 상태 UI ───────────────────────────────────────────
 function setStatus(msg, type = '') {
     const row = document.getElementById('statusRow');
-    const txt = document.getElementById('statusText');
     row.className = 'status-row ' + type;
-    txt.textContent = msg;
     if (type === '' || type === 'neutral') {
         row.innerHTML = `<span>${msg}</span>`;
     } else {
@@ -391,18 +464,19 @@ function setStatus(msg, type = '') {
     }
 }
 
+// 4단계 스텝 인디케이터
 function setStep(n) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
         const dot = document.getElementById('dot' + i);
-        dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+        if (dot) dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
     }
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
         const line = document.getElementById('line' + i);
-        line.className = 'step-line' + (i < n ? ' done' : '');
+        if (line) line.className = 'step-line' + (i < n ? ' done' : '');
     }
 }
 
-// ── Step 1: BLE 연결 ──────────────────────────────────
+// ── Step 0: BLE 연결 ──────────────────────────────────
 async function connectBLE() {
     if (!navigator.bluetooth) {
         setStatus('이 브라우저는 Bluetooth를 지원하지 않아', 'error');
@@ -425,11 +499,10 @@ async function connectBLE() {
         ssidChar   = await svc.getCharacteristic(SSID_UUID);
         passChar   = await svc.getCharacteristic(PASS_UUID);
         statusChar = await svc.getCharacteristic(STATUS_UUID);
+        apikeyChar = await svc.getCharacteristic(APIKEY_UUID);
 
-        // Status 알림 구독
         await statusChar.startNotifications();
         statusChar.addEventListener('characteristicvaluechanged', onStatusNotify);
-
         bleDevice.addEventListener('gattserverdisconnected', onDisconnect);
 
         setStatus('로디 연결됨 ✓', 'success');
@@ -443,7 +516,7 @@ async function connectBLE() {
     }
 }
 
-// ── Step 2: WiFi 정보 전송 ────────────────────────────
+// ── Step 1: WiFi 정보 전송 ────────────────────────────
 async function sendCredentials() {
     const ssid = document.getElementById('ssidInput').value.trim()
                || document.getElementById('ssidSelect').value;
@@ -479,24 +552,74 @@ function onStatusNotify(event) {
     if (val === 'connecting') {
         setStatus('WiFi 연결 시도 중...', '');
     } else if (val.startsWith('connected:')) {
-        connectedIp = val.split(':')[1];
-        showSuccess(connectedIp);
+        // WiFi 성공 → 트랙 선택으로
+        connectedIp = val.split(':').slice(1).join(':');
+        setStep(2);
+        document.getElementById('stepConnecting').classList.add('hidden');
+        document.getElementById('stepTrack').classList.remove('hidden');
+        setStatus('WiFi 연결됨 ✓', 'success');
     } else if (val === 'failed') {
         setStatus('WiFi 연결 실패 — SSID/PW 확인해줘', 'error');
         document.getElementById('stepConnecting').classList.add('hidden');
         document.getElementById('stepWifi').classList.remove('hidden');
         document.getElementById('btnSend').disabled = false;
+    } else if (val === 'apikey:ok') {
+        showSuccess(connectedIp, true);
+    } else if (val === 'apikey:skip') {
+        showSuccess(connectedIp, false);
+    }
+}
+
+// ── Step 2: 트랙 선택 ────────────────────────────────
+function chooseTrack(track) {
+    document.getElementById('stepTrack').classList.add('hidden');
+    if (track === 'b') {
+        setStep(3);
+        document.getElementById('stepApiKey').classList.remove('hidden');
+        setStatus('API 키를 입력해줘', '');
+    } else {
+        // 트랙 A: 스킵 신호 전송
+        skipApiKey();
+    }
+}
+
+// ── Step 3: API 키 전송 ───────────────────────────────
+async function sendApiKey() {
+    const key = document.getElementById('apikeyInput').value.trim();
+    if (!key.startsWith('sk-ant')) {
+        setStatus('올바른 키 형식이 아니야 (sk-ant-...)', 'error');
+        return;
+    }
+    if (!apikeyChar) { setStatus('BLE 연결이 끊겼어', 'error'); return; }
+    try {
+        setStatus('API 키 전송 중...', '');
+        const enc = new TextEncoder();
+        await apikeyChar.writeValue(enc.encode(key));
+    } catch (err) {
+        setStatus('전송 실패: ' + err.message, 'error');
+    }
+}
+
+async function skipApiKey() {
+    if (!apikeyChar) { showSuccess(connectedIp, false); return; }
+    try {
+        const enc = new TextEncoder();
+        await apikeyChar.writeValue(enc.encode('skip'));
+    } catch (err) {
+        showSuccess(connectedIp, false);
     }
 }
 
 // ── 성공 화면 ─────────────────────────────────────────
-function showSuccess(ip) {
-    setStep(2);
+function showSuccess(ip, hasApiKey) {
+    setStep(3);
+    document.getElementById('stepApiKey').classList.add('hidden');
     document.getElementById('stepConnecting').classList.add('hidden');
+    document.getElementById('stepTrack').classList.add('hidden');
     document.getElementById('stepSuccess').classList.remove('hidden');
     document.getElementById('connectedIp').textContent = 'http://' + ip;
-    setStatus('WiFi 연결 완료!', 'success');
-    document.getElementById('connectedIp').dataset.ip = ip;
+    document.getElementById('connectedIp').dataset.ip  = ip;
+    setStatus(hasApiKey ? '내 API 키로 연결됐어 ✓' : '로디 구독 모드로 시작해 ✓', 'success');
 }
 
 function openRodi() {
@@ -510,13 +633,15 @@ function togglePw() {
     input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-function onDisconnect() {
-    if (!connectedIp) {
-        setStatus('BLE 연결 끊김', 'error');
-    }
+function toggleApiKey() {
+    const input = document.getElementById('apikeyInput');
+    input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-// ssidSelect 선택 시 ssidInput에 반영
+function onDisconnect() {
+    if (!connectedIp) setStatus('BLE 연결 끊김', 'error');
+}
+
 document.getElementById('ssidSelect').addEventListener('change', function() {
     if (this.value) document.getElementById('ssidInput').value = this.value;
 });
